@@ -6,12 +6,16 @@ Run multiple Claude workers in parallel, each on its own git worktree.
 - You can commit and push without leaving the TUI.
 - Everything is managed from a single tmux session.
 
-## Setup
+## Requirements
 
-Requires [uv](https://github.com/astral-sh/uv), tmux, and the Claude CLI.
+- [uv](https://github.com/astral-sh/uv)
+- tmux
+- [Claude CLI](https://claude.ai/code)
+
+## Install
 
 ```bash
-uv tool install .
+uv tool install git+https://github.com/dgzlopes/garrison
 ```
 
 ## Usage
