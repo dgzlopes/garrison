@@ -36,14 +36,17 @@ garrison reset    # wipe state, kill the session and remove all worktrees
 
 **On selected worker**
 
-| Key     | Action |
-|---------|--------|
-| `enter` | Open |
-| `f`     | Delete worker and worktree |
+| Key | Action |
+|-----|--------|
+| `f` | Delete worker and worktree |
 | `s`     | Commit all changes and push |
 | `t`     | Open a terminal in the worktree |
 | `w`     | Run `yarn run watch` in the worktree |
 | `c`     | Open worktree in your current VS Code workplace |
+
+## Copying text (macOS)
+
+Hold `Option` while dragging to select text, then `Cmd+C` to copy. tmux captures mouse events by default so the `Option` key is needed to bypass it.
 
 ## Contributing
 

@@ -38,6 +38,27 @@ def new_session(name: str, start_dir: str) -> None:
         check=True,
     )
     _run("set-option", "-t", name, "-g", "mouse", "on")
+    _run("set-option", "-t", name, "-g", "set-clipboard", "on")
+    subprocess.run(
+        ["tmux", "bind-key", "-T", "copy-mode-vi", "MouseDragEnd1Pane",
+         "send-keys", "-X", "copy-pipe-and-cancel", "pbcopy"],
+        capture_output=True,
+    )
+    subprocess.run(
+        ["tmux", "bind-key", "-T", "copy-mode", "MouseDragEnd1Pane",
+         "send-keys", "-X", "copy-pipe-and-cancel", "pbcopy"],
+        capture_output=True,
+    )
+    subprocess.run(
+        ["tmux", "bind-key", "-T", "root", "MouseDrag1Pane",
+         "if-shell", "-F", "#{mouse_any_flag}",
+         "send-keys -M", "copy-mode -e"],
+        capture_output=True,
+    )
+    subprocess.run(
+        ["tmux", "unbind-key", "-T", "root", "MouseDown3Pane"],
+        capture_output=True,
+    )
 
 
 def attach_session(name: str) -> None:
@@ -61,9 +82,7 @@ def new_window(session: str, name: str, start_dir: str, command: str) -> int:
 
 
 def switch_client(session: str, index: int) -> None:
-    subprocess.run(
-        ["tmux", "select-window", "-t", f"{session}:{index}"],
-    )
+    _run("switch-client", "-t", f"{session}:{index}")
 
 
 def list_windows(session: str) -> list[Window]:
