@@ -957,13 +957,11 @@ func (m model) viewMain() string {
 	}
 
 	lines = append(lines, "")
-	sep := "  " + sDim.Render("·") + "  "
 	footer := "  " + sKey.Render("n") + " " + sDim.Render("new project")
 	if total > 0 {
 		footer += "   " + sKey.Render("d") + " " + sDim.Render("delete project")
 	}
 	footer += "   " + sKey.Render("q") + " " + sDim.Render("quit")
-	footer += sep + sKey.Render("↑↓") + " " + sDim.Render("navigate")
 	lines = append(lines, footer)
 	if total > 0 && m.cursor < total {
 		wk := m.state.Workers[m.cursor]
@@ -978,7 +976,6 @@ func (m model) viewPick() string {
 	if m.pickedWorker == nil {
 		return ""
 	}
-	sep := "  " + sDim.Render("·") + "  "
 	var lines []string
 	lines = append(lines, m.pageHeader())
 	lines = append(lines, "")
@@ -994,19 +991,16 @@ func (m model) viewPick() string {
 	lines = append(lines, "")
 	lines = append(lines, "  "+
 		sKey.Render("enter")+" "+sDim.Render("select")+"   "+
-		sKey.Render("esc")+" "+sDim.Render("back")+
-		sep+sKey.Render("↑↓")+" "+sDim.Render("navigate"))
+		sKey.Render("esc")+" "+sDim.Render("back"))
 	return strings.Join(lines, "\n")
 }
 
 // ── Forms ─────────────────────────────────────────────────────────────────────
 
 func (m model) modalNewFlow() string {
-	sep := "  " + sDim.Render("·") + "  "
 	navHints := "  " +
 		sKey.Render("enter") + " " + sDim.Render("select") + "   " +
-		sKey.Render("esc") + " " + sDim.Render("back") +
-		sep + sKey.Render("↑↓") + " " + sDim.Render("navigate")
+		sKey.Render("esc") + " " + sDim.Render("back")
 
 	var lines []string
 	lines = append(lines, m.pageHeader())
