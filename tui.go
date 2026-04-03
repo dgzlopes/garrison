@@ -35,8 +35,8 @@ var (
 	sBold    = lipgloss.NewStyle().Foreground(cGrey).Bold(true)
 	sDim     = lipgloss.NewStyle().Faint(true)
 	sCommand = lipgloss.NewStyle().Foreground(cGrey).Italic(true)
-	sKey    = lipgloss.NewStyle().Foreground(cCyan).Bold(true)
-	sHeader = lipgloss.NewStyle().Bold(true).Foreground(cGrey)
+	sKey     = lipgloss.NewStyle().Foreground(cCyan).Bold(true)
+	sHeader  = lipgloss.NewStyle().Bold(true).Foreground(cGrey)
 )
 
 // ── Mode ──────────────────────────────────────────────────────────────────────
