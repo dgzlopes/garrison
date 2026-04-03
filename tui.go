@@ -67,6 +67,10 @@ type workerDeletedMsg struct{ branch string }
 type errMsg struct{ err error }
 type staleWorktreeMsg struct{ branch, base string }
 type branchExistsMsg struct{ branch string }
+type fetchDoneMsg struct {
+	branch string
+	base   string // empty means use default remote branch
+}
 type graftDoneMsg struct {
 	branch string
 	err    error
@@ -103,6 +107,7 @@ type model struct {
 	pickedAction       int // -1 = none
 	spinner            spinner.Model
 	grafting           bool
+	fetching           bool
 	publishBranch      string
 }
 
@@ -207,6 +212,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tickCmd()
 
+	case fetchDoneMsg:
+		m.fetching = false
+		return m, m.createWorkerAfterFetchCmd(msg.branch, msg.base)
+
 	case workerCreatedMsg:
 
 	case workerDeletedMsg:
@@ -265,7 +274,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.notifTick = 6
 
 	case spinner.TickMsg:
-		if m.grafting {
+		if m.grafting || m.fetching {
 			m.spinner, _ = m.spinner.Update(msg)
 		}
 
@@ -403,7 +412,8 @@ func (m model) updateNewDirect(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.mode = modeNormal
 		m.input.Blur()
-		return m, m.createWorkerCmd(branch)
+		m.fetching = true
+		return m, tea.Batch(m.createWorkerCmd(branch), m.spinner.Tick)
 	}
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(k)
@@ -426,7 +436,8 @@ func (m model) updateNewPick(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.mode = modeNormal
 		m.input.Blur()
-		return m, m.createWorkerCmd(branch)
+		m.fetching = true
+		return m, tea.Batch(m.createWorkerCmd(branch), m.spinner.Tick)
 	case "up", "ctrl+p":
 		if m.listCursor > 0 {
 			m.listCursor--
@@ -499,7 +510,8 @@ func (m model) updateNewForkName(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.forkBase = ""
 		m.mode = modeNormal
 		m.input.Blur()
-		return m, m.createWorkerCmdWithBase(branch, base)
+		m.fetching = true
+		return m, tea.Batch(m.createWorkerCmdWithBase(branch, base), m.spinner.Tick)
 	}
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(k)
@@ -623,7 +635,8 @@ func (m model) updateBranchExists(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "y", "Y":
 		m.branchExistsBranch = ""
 		m.mode = modeNormal
-		return m, m.createWorkerCmd(branch)
+		m.fetching = true
+		return m, tea.Batch(m.createWorkerCmd(branch), m.spinner.Tick)
 	default:
 		m.branchExistsBranch = ""
 		m.mode = modeNormal
@@ -769,27 +782,64 @@ func (m *model) graftCmd(branch string) tea.Cmd {
 func (m *model) createWorkerCmd(branch string) tea.Cmd {
 	repoRoot, state := m.repoRoot, m.state
 	return func() tea.Msg {
-		worktreePath := filepath.Join(repoRoot, ".tulip", "worktrees", branch)
-		gitEnsureExclude(repoRoot)
-
 		if findWorker(state, branch) != nil {
 			return errMsg{fmt.Errorf("project %q already exists", branch)}
 		}
-
 		_ = gitFetch(repoRoot)
+		return fetchDoneMsg{branch: branch}
+	}
+}
+
+func (m *model) createWorkerCmdWithBase(branch, base string) tea.Cmd {
+	repoRoot, state := m.repoRoot, m.state
+	return func() tea.Msg {
+		if findWorker(state, branch) != nil {
+			return errMsg{fmt.Errorf("project %q already exists", branch)}
+		}
+		_ = gitFetch(repoRoot)
+		return fetchDoneMsg{branch: branch, base: base}
+	}
+}
+
+func (m *model) createWorkerAfterFetchCmd(branch, base string) tea.Cmd {
+	repoRoot, state := m.repoRoot, m.state
+	return func() tea.Msg {
+		worktreePath := filepath.Join(repoRoot, ".tulip", "worktrees", branch)
+		gitEnsureExclude(repoRoot)
 
 		var err error
-		if gitBranchExistsLocally(repoRoot, branch) {
-			err = gitCreateWorktree(repoRoot, branch, worktreePath)
-		} else {
-			err = gitCreateWorktreeFromBase(repoRoot, branch, worktreePath, "origin/HEAD")
-		}
-		if err != nil {
-			var stale StaleWorktreeError
-			if errors.As(err, &stale) {
-				return staleWorktreeMsg{branch: branch}
+		if base != "" {
+			err = gitCreateWorktreeFromBase(repoRoot, branch, worktreePath, "origin/"+base)
+			if err != nil {
+				var stale StaleWorktreeError
+				if errors.As(err, &stale) {
+					return staleWorktreeMsg{branch: branch, base: base}
+				}
+				var exists BranchExistsError
+				if errors.As(err, &exists) {
+					return branchExistsMsg{branch: branch}
+				}
+				return errMsg{err}
 			}
-			return errMsg{err}
+		} else if gitBranchExistsLocally(repoRoot, branch) {
+			err = gitCreateWorktree(repoRoot, branch, worktreePath)
+			if err != nil {
+				var stale StaleWorktreeError
+				if errors.As(err, &stale) {
+					return staleWorktreeMsg{branch: branch}
+				}
+				return errMsg{err}
+			}
+		} else {
+			defaultBase := gitDefaultRemoteBranch(repoRoot)
+			err = gitCreateWorktreeFromBase(repoRoot, branch, worktreePath, defaultBase)
+			if err != nil {
+				var stale StaleWorktreeError
+				if errors.As(err, &stale) {
+					return staleWorktreeMsg{branch: branch}
+				}
+				return errMsg{err}
+			}
 		}
 
 		return startSession(state, branch, worktreePath)
@@ -806,34 +856,6 @@ func (m *model) deleteWorkerCmd(w Worker) tea.Cmd {
 			return errMsg{err}
 		}
 		return workerDeletedMsg{branch: w.Branch}
-	}
-}
-
-func (m *model) createWorkerCmdWithBase(branch, base string) tea.Cmd {
-	repoRoot, state := m.repoRoot, m.state
-	return func() tea.Msg {
-		worktreePath := filepath.Join(repoRoot, ".tulip", "worktrees", branch)
-		gitEnsureExclude(repoRoot)
-
-		if findWorker(state, branch) != nil {
-			return errMsg{fmt.Errorf("project %q already exists", branch)}
-		}
-
-		_ = gitFetch(repoRoot)
-
-		if err := gitCreateWorktreeFromBase(repoRoot, branch, worktreePath, "origin/"+base); err != nil {
-			var stale StaleWorktreeError
-			if errors.As(err, &stale) {
-				return staleWorktreeMsg{branch: branch, base: base}
-			}
-			var exists BranchExistsError
-			if errors.As(err, &exists) {
-				return branchExistsMsg{branch: branch}
-			}
-			return errMsg{err}
-		}
-
-		return startSession(state, branch, worktreePath)
 	}
 }
 
@@ -910,6 +932,9 @@ func (m model) pageHeader() string {
 	h := sTitle.Render("🌷 tulip") + " " + sDim.Render("— a nicer way to work with Claude Code")
 	if m.grafting {
 		h += "  " + m.spinner.View() + sDim.Render(" grafting…")
+	}
+	if m.fetching {
+		h += "  " + m.spinner.View() + sDim.Render(" fetching…")
 	}
 	if m.notif != "" {
 		var ns string

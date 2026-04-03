@@ -242,6 +242,31 @@ func gitFetch(repoRoot string) error {
 	return nil
 }
 
+// gitDefaultRemoteBranch returns the remote's default branch (e.g. "origin/main").
+// It reads the symbolic ref set by git fetch/clone. Falls back to origin/main then origin/master.
+func gitDefaultRemoteBranch(repoRoot string) string {
+	cmd := exec.Command("git", "symbolic-ref", "refs/remotes/origin/HEAD")
+	cmd.Dir = repoRoot
+	out, err := cmd.Output()
+	if err == nil {
+		// output is like "refs/remotes/origin/main\n"
+		ref := strings.TrimSpace(string(out))
+		ref = strings.TrimPrefix(ref, "refs/remotes/")
+		if ref != "" {
+			return ref
+		}
+	}
+	// Fall back: check if origin/main or origin/master exist.
+	for _, b := range []string{"origin/main", "origin/master"} {
+		check := exec.Command("git", "rev-parse", "--verify", b)
+		check.Dir = repoRoot
+		if check.Run() == nil {
+			return b
+		}
+	}
+	return "origin/main"
+}
+
 // gitPush pushes the given branch to origin, setting the upstream tracking ref.
 func gitPush(worktree, branch string) error {
 	cmd := exec.Command("git", "push", "-u", "origin", branch)
