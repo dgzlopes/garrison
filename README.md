@@ -3,6 +3,8 @@
 
 # tulip
 
+> ⚠️ This tool is purposely built for myself and how I develop things at Grafana Labs (e.g. using Graft)
+
 Run multiple Claude Code sessions in parallel on a single repo, each isolated in its own git worktree.
 
 - Sessions survive terminal restarts and are automatically resumed.
@@ -63,10 +65,6 @@ tulip graft-debug <id|branch>    # attach to the graft watch output
 tulip vscode <id|branch>         # open the worktree in VS Code
 tulip publish <id|branch> <msg>  # stage all, commit (signed), and push
 ```
-
-## Contributing
-
-Personal tool — fork and adapt freely.
 
 ## License
 
