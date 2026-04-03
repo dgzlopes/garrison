@@ -3,7 +3,7 @@
 Run multiple Claude Code sessions in parallel on a single repo, each isolated in its own git worktree.
 
 - Sessions survive terminal restarts and are automatically resumed.
-- Jump into any project's shell, preview live changes, or commit and push from a single command.
+- Jump into any project's shell, preview live changes with Graft, or commit and push from a single command.
 - Fully isolated from your personal tmux — tulip runs its own tmux server.
 
 ## Requirements
@@ -32,7 +32,20 @@ tulip reset    # wipe all projects, sessions, and worktrees
 | `d` | Delete selected project and worktree |
 | `↑↓` / `j` `k` | Navigate |
 | `↵` | Open project action menu |
+| `?` | Help |
 | `q` | Quit |
+
+### Status indicators
+
+| Dot | Meaning |
+|-----|---------|
+| ● grey | No uncommitted changes |
+| ● green | Uncommitted changes in worktree |
+
+| Label | Meaning |
+|-------|---------|
+| `graft: active` | Yarn watch is running |
+| `graft: failed` | Watch exited unexpectedly |
 
 ## Project commands
 
