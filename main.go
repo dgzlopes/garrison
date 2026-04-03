@@ -504,6 +504,18 @@ func cmdReset() error {
 		return nil
 	}
 
+	var dirty []string
+	for _, w := range s.Workers {
+		if gitIsDirty(w.Worktree) {
+			dirty = append(dirty, w.Branch)
+		}
+	}
+	if len(dirty) > 0 {
+		fmt.Println("Warning: the following projects have uncommitted changes that will be lost:")
+		for _, b := range dirty {
+			fmt.Printf("  - %s\n", b)
+		}
+	}
 	fmt.Printf("This will kill %d session(s) and remove their worktrees. Branches are kept.\n", len(s.Workers))
 	fmt.Print("Reset everything? [y/N] ")
 
