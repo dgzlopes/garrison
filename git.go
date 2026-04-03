@@ -9,6 +9,14 @@ import (
 	"strings"
 )
 
+// gitIsDirty returns true if the worktree has uncommitted changes.
+func gitIsDirty(worktree string) bool {
+	cmd := exec.Command("git", "status", "--porcelain")
+	cmd.Dir = worktree
+	out, err := cmd.Output()
+	return err == nil && len(bytes.TrimSpace(out)) > 0
+}
+
 // gitListRecentBranches returns recently-active remote branches, sorted by committer date.
 // Returns an empty slice on error. HEAD is stripped from results.
 func gitListRecentBranches(repoRoot string) []string {

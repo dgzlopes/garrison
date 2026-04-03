@@ -137,36 +137,7 @@ func tmuxKillSession(name string) error {
 	return tmuxRun("kill-session", "-t", name)
 }
 
-// tmuxCapturePaneLast returns the last n lines of the visible pane content for a session.
-func tmuxCapturePaneLast(session string, n int) string {
-	cmd := exec.Command("tmux", tmuxArgs([]string{
-		"capture-pane", "-p", "-t", session, "-J",
-	})...)
-	out, err := cmd.Output()
-	if err != nil {
-		return ""
-	}
-	all := strings.Split(strings.TrimRight(string(out), "\n"), "\n")
-	if len(all) > n {
-		all = all[len(all)-n:]
-	}
-	return strings.Join(all, "\n")
-}
 
-// claudeSessionStatus returns "working", "idle", or "no-session".
-// It detects whether Claude is actively processing by looking for the
-// "ESC to interrupt" hint that the Claude CLI renders while busy.
-// When idle, Claude shows "? for shortcuts" at the bottom instead.
-func claudeSessionStatus(session string) string {
-	if !tmuxHasSession(session) {
-		return "no-session"
-	}
-	content := tmuxCapturePaneLast(session, 5)
-	if strings.Contains(content, "ESC to interrupt") {
-		return "working"
-	}
-	return "idle"
-}
 
 // tmuxSetGraftStatus updates the @grafting session variable so the status bar
 // reflects the current graft state: "", "active", or "crashed".

@@ -163,13 +163,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				continue
 			}
 			var newStatus string
-			switch claudeSessionStatus(w.Session) {
-			case "working":
-				newStatus = "working"
-			case "idle":
-				newStatus = "idle"
-			default:
-				newStatus = "stopped"
+			if gitIsDirty(w.Worktree) {
+				newStatus = "dirty"
+			} else {
+				newStatus = "clean"
 			}
 			if w.Status != newStatus {
 				w.Status = newStatus
@@ -933,13 +930,11 @@ func (m model) viewMain() string {
 			}
 			var dot string
 			switch wk.Status {
-			case "working":
-				dot = sCyan.Render("●")
-			case "idle":
+			case "dirty":
 				dot = sGreen.Render("●")
 			case "error":
 				dot = sRed.Render("●")
-			default: // stopped, waiting
+			default: // clean
 				dot = sGrey.Render("●")
 			}
 			num := sDim.Render(fmt.Sprintf("%d", wk.ID))
