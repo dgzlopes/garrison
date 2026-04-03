@@ -45,15 +45,19 @@ func tmuxNewSession(name, branch, startDir string) error {
 	_ = tmuxRun("set-option", "-t", name, "@branch", branch)
 	_ = tmuxRun("set-option", "-g", "status", "on")
 	_ = tmuxRun("set-option", "-g", "status-style", "bg=colour235,fg=colour245")
-	_ = tmuxRun("set-option", "-g", "status-left", "#[fg=colour6,bold] #{s|watch/.*|Graft Debug|:#{s|shell/.*|Shell|:#{s|claude|Claude Code|:#{window_name}}}} #[nobold,fg=colour8]— #[fg=colour245]#{@branch}  ")
-	_ = tmuxRun("set-option", "-g", "status-left-length", "60")
+	_ = tmuxRun("set-option", "-g", "status-left", "#[fg=colour6,bold] #{s|watch/.*|Graft Debug|:#{s|shell/.*|Shell|:#{s|claude|Claude Code|:#{window_name}}}} #[nobold,fg=colour8]— #[fg=colour245]#{@branch}#{?#{==:#{@grafting},active},#[fg=colour6]  ⌁ grafting,#{?#{==:#{@grafting},crashed},#[fg=colour1]  ⌁ graft crashed,}}  #[bg=colour240,fg=colour255] #{?#{==:#{@copy_done},1},✓ copied,#{?pane_in_mode,select the text you want to copy,copy}} ")
+	_ = tmuxRun("set-option", "-g", "status-left-length", "80")
 	_ = tmuxRun("set-option", "-g", "status-right", "#[bg=colour240,fg=colour255]  ← back to tulip #[default]")
 	_ = tmuxRun("set-option", "-g", "status-right-length", "22")
 	_ = tmuxRun("set-option", "-g", "window-status-format", "")
 	_ = tmuxRun("set-option", "-g", "window-status-current-format", "")
 	_ = tmuxRun("set-option", "-g", "window-status-separator", "")
 	_ = tmuxRun("set-option", "-g", "mouse", "on")
+	_ = tmuxRun("set-option", "-g", "set-clipboard", "on")
+	_ = tmuxRun("bind-key", "-T", "copy-mode", "MouseDragEnd1Pane", "send-keys", "-X", "copy-pipe-and-cancel",
+		`pbcopy && tmux set-option -t "#{session_name}" @copy_done 1 && { sleep 2; tmux set-option -t "#{session_name}" @copy_done 0; tmux refresh-client -S; } &`)
 	_ = tmuxRun("bind-key", "-n", "MouseDown1StatusRight", "detach-client")
+	_ = tmuxRun("bind-key", "-n", "MouseDown1StatusLeft", "copy-mode")
 	return nil
 }
 
@@ -162,4 +166,10 @@ func claudeSessionStatus(session string) string {
 		return "working"
 	}
 	return "idle"
+}
+
+// tmuxSetGraftStatus updates the @grafting session variable so the status bar
+// reflects the current graft state: "", "active", or "crashed".
+func tmuxSetGraftStatus(session, status string) {
+	_ = tmuxRun("set-option", "-t", session, "@grafting", status)
 }

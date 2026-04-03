@@ -177,22 +177,31 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			winName := "watch/" + w.Branch
 			if tmuxIsWindowDead(w.Session, winName) {
-				// process exited — check if it crashed
 				code := tmuxWindowExitStatus(w.Session, winName)
 				tmuxKillWindow(w.Session, winName)
-				if w.Grafting {
-					w.Grafting = false
-					changed = true
-				}
 				if code != 0 {
+					if w.GraftStatus != "crashed" {
+						w.GraftStatus = "crashed"
+						tmuxSetGraftStatus(w.Session, "crashed")
+						changed = true
+					}
 					m.notif = fmt.Sprintf("✗  graft crashed (exit %d) on %s", code, w.Branch)
 					m.notifIsErr = true
 					m.notifTick = 8
+				} else if w.GraftStatus != "" {
+					w.GraftStatus = ""
+					tmuxSetGraftStatus(w.Session, "")
+					changed = true
 				}
 			} else {
 				grafting := tmuxHasWindow(w.Session, winName)
-				if w.Grafting != grafting {
-					w.Grafting = grafting
+				newGS := ""
+				if grafting {
+					newGS = "active"
+				}
+				if w.GraftStatus != newGS {
+					w.GraftStatus = newGS
+					tmuxSetGraftStatus(w.Session, newGS)
 					changed = true
 				}
 			}
@@ -935,8 +944,11 @@ func (m model) viewMain() string {
 			}
 			num := sDim.Render(fmt.Sprintf("%d", wk.ID))
 			row := num + "  " + dot + " " + branch
-			if wk.Grafting {
+			switch wk.GraftStatus {
+			case "active":
 				row += "  " + sCyan.Render("⌁ grafting")
+			case "crashed":
+				row += "  " + sRed.Render("⌁ crashed")
 			}
 			if i == m.cursor {
 				lines = append(lines, "  "+sCyan.Render("▶")+" "+row)
