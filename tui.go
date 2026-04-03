@@ -35,8 +35,8 @@ var (
 	sBold    = lipgloss.NewStyle().Foreground(cGrey).Bold(true)
 	sDim     = lipgloss.NewStyle().Faint(true)
 	sCommand = lipgloss.NewStyle().Foreground(cGrey).Italic(true)
-	sKey     = lipgloss.NewStyle().Foreground(cCyan).Bold(true)
-	sHeader  = lipgloss.NewStyle().Bold(true).Foreground(cGrey)
+	sKey    = lipgloss.NewStyle().Foreground(cCyan).Bold(true)
+	sHeader = lipgloss.NewStyle().Bold(true).Foreground(cGrey)
 )
 
 // ── Mode ──────────────────────────────────────────────────────────────────────
@@ -55,6 +55,7 @@ const (
 	modeBranchExists  // confirm start from existing branch
 	modePick          // action picker for selected project
 	modePublish       // commit message input before publishing
+	modeHelp          // help screen
 )
 
 // ── Messages ──────────────────────────────────────────────────────────────────
@@ -289,6 +290,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updatePick(msg)
 		case modePublish:
 			return m.updatePublish(msg)
+		case modeHelp:
+			return m.updateHelp(msg)
 		}
 	}
 
@@ -324,6 +327,8 @@ func (m model) updateNormal(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.actionWorker = &m.state.Workers[m.cursor]
 			m.mode = modeDelete
 		}
+	case "?":
+		m.mode = modeHelp
 	}
 	return m, nil
 }
@@ -871,6 +876,8 @@ func (m model) View() string {
 		return m.viewPick()
 	case modePublish:
 		return m.modalPublish()
+	case modeHelp:
+		return m.viewHelp()
 	}
 	return m.viewMain()
 }
@@ -962,6 +969,7 @@ func (m model) viewMain() string {
 		footer += "   " + sKey.Render("d") + " " + sDim.Render("delete project")
 	}
 	footer += "   " + sKey.Render("q") + " " + sDim.Render("quit")
+	footer += "   " + sKey.Render("?") + " " + sDim.Render("help")
 	lines = append(lines, footer)
 	if total > 0 && m.cursor < total {
 		wk := m.state.Workers[m.cursor]
@@ -969,6 +977,35 @@ func (m model) viewMain() string {
 		lines = append(lines, "  "+sDim.Render("to interact press")+" "+sCyan.Render("↵ enter")+" "+sDim.Render("or run")+" "+sCommand.Render(fmt.Sprintf("tulip %s", wk.Branch)))
 	}
 
+	return strings.Join(lines, "\n")
+}
+
+func (m model) updateHelp(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch k.String() {
+	case "esc", "q", "?":
+		m.mode = modeNormal
+	}
+	return m, nil
+}
+
+func (m model) viewHelp() string {
+	sTitle2 := lipgloss.NewStyle().Bold(true).Foreground(cCyan)
+	var lines []string
+	lines = append(lines, "")
+	lines = append(lines, "  "+sTitle2.Render("tulip — help"))
+	lines = append(lines, "")
+	lines = append(lines, "  "+sBold.Render("status dots"))
+	lines = append(lines, "")
+	lines = append(lines, "  "+sGrey.Render("●")+"  "+sDim.Render("no uncommitted changes"))
+	lines = append(lines, "  "+sGreen.Render("●")+"  "+sDim.Render("uncommitted changes in worktree"))
+	lines = append(lines, "  "+sRed.Render("●")+"  "+sDim.Render("worktree error"))
+	lines = append(lines, "")
+	lines = append(lines, "  "+sBold.Render("graft status"))
+	lines = append(lines, "")
+	lines = append(lines, "  "+sCyan.Render("⌁ grafting")+"   "+sDim.Render("graft watch is running"))
+	lines = append(lines, "  "+sRed.Render("⌁ graft crashed")+"  "+sDim.Render("graft watch exited unexpectedly"))
+	lines = append(lines, "")
+	lines = append(lines, "  "+sKey.Render("esc")+" "+sDim.Render("to go back"))
 	return strings.Join(lines, "\n")
 }
 
@@ -989,9 +1026,13 @@ func (m model) viewPick() string {
 		}
 	}
 	lines = append(lines, "")
+	action := pickActions[m.pickCursor].name
+	branch := m.pickedWorker.Branch
 	lines = append(lines, "  "+
-		sKey.Render("enter")+" "+sDim.Render("select")+"   "+
-		sKey.Render("esc")+" "+sDim.Render("back"))
+		sDim.Render("to run press")+" "+sKey.Render("↵ enter")+" "+
+		sDim.Render("or")+" "+sCommand.Render(fmt.Sprintf("tulip %s %s", action, branch)))
+	lines = append(lines, "")
+	lines = append(lines, "  "+sKey.Render("esc")+" "+sDim.Render("to go back"))
 	return strings.Join(lines, "\n")
 }
 
