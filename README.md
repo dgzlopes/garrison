@@ -39,8 +39,8 @@ tulip reset    # wipe all projects, sessions, and worktrees
 
 | Dot | Meaning |
 |-----|---------|
-| ● grey | No uncommitted changes |
-| ● green | Uncommitted changes in worktree |
+| grey | No uncommitted changes |
+| green | Uncommitted changes in worktree |
 
 | Label | Meaning |
 |-------|---------|
