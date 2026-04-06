@@ -1003,7 +1003,7 @@ func prBadge(number int, state, url string) string {
 	var styled string
 	switch state {
 	case "OPEN":
-		styled = sCyan.Render(label)
+		styled = sGreen.Render(label)
 	case "DRAFT":
 		styled = sGrey.Render(label)
 	case "MERGED":
