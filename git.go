@@ -17,29 +17,49 @@ func gitIsDirty(worktree string) bool {
 	return err == nil && len(bytes.TrimSpace(out)) > 0
 }
 
-// gitListRecentBranches returns recently-active remote branches, sorted by committer date.
-// Returns an empty slice on error. HEAD is stripped from results.
+// gitListRecentBranches returns recently-active branches (remote + local), sorted by
+// committer date and deduplicated. Returns an empty slice on error. HEAD is stripped.
 func gitListRecentBranches(repoRoot string) []string {
 	cmd := exec.Command(
 		"git",
 		"for-each-ref",
 		"--sort=-committerdate",
-		"--format=%(refname:lstrip=3)",
+		"--format=%(refname:short) %(refname)",
 		"refs/remotes/origin/",
+		"refs/heads/",
 	)
 	cmd.Dir = repoRoot
 	out, err := cmd.Output()
 	if err != nil {
 		return []string{}
 	}
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	seen := map[string]bool{}
 	var branches []string
-	for _, l := range lines {
+	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 		l = strings.TrimSpace(l)
-		if l == "" || l == "HEAD" {
+		if l == "" {
 			continue
 		}
-		branches = append(branches, l)
+		// short name is the first field; full refname is the second
+		parts := strings.SplitN(l, " ", 2)
+		short := parts[0]
+		fullref := ""
+		if len(parts) == 2 {
+			fullref = parts[1]
+		}
+		// strip "origin/" prefix for remote refs so local and remote names match
+		name := strings.TrimPrefix(short, "origin/")
+		if name == "HEAD" {
+			continue
+		}
+		// skip remote refs that have a local counterpart (already or will be added)
+		if strings.HasPrefix(fullref, "refs/remotes/") && seen[name] {
+			continue
+		}
+		if !seen[name] {
+			seen[name] = true
+			branches = append(branches, name)
+		}
 	}
 	return branches
 }
