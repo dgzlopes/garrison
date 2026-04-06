@@ -473,8 +473,8 @@ func (m model) updateNewPick(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.input.Blur()
 		return m, nil
 	case "enter":
-		branch := strings.TrimSpace(m.input.Value())
-		if branch == "" && m.listCursor < len(m.filtered) {
+		var branch string
+		if m.listCursor < len(m.filtered) {
 			branch = m.filtered[m.listCursor]
 		}
 		if branch == "" {
