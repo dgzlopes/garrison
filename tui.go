@@ -1092,9 +1092,9 @@ func (m model) viewMain() string {
 			}
 			switch wk.GraftStatus {
 			case "active":
-				row += "  " + sGreen.Render("graft: active")
+				row += "  " + sGreen.Render("graft 🐝")
 			case "failed":
-				row += "  " + sRed.Render("graft: failed")
+				row += "  " + sRed.Render("graft: failed") + " " + sDim.Render("(see graft-debug)")
 			}
 			if i == m.cursor {
 				lines = append(lines, "  "+sCyan.Render("▶")+" "+row)
@@ -1146,7 +1146,7 @@ func (m model) viewHelp() string {
 	lines = append(lines, "")
 	lines = append(lines, "  "+sBold.Render("graft status"))
 	lines = append(lines, "")
-	lines = append(lines, "  "+sGreen.Render("graft: active")+"  "+sDim.Render("graft watch is running"))
+	lines = append(lines, "  "+sGreen.Render("graft 🐝")+"  "+sDim.Render("graft watch is running"))
 	lines = append(lines, "  "+sRed.Render("graft: failed")+"   "+sDim.Render("graft watch exited unexpectedly"))
 	lines = append(lines, "")
 	lines = append(lines, "  "+sKey.Render("esc")+" "+sDim.Render("to go back"))
