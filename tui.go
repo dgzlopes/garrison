@@ -646,7 +646,11 @@ func (m *model) pruneAndRetryCmd(branch, base string) tea.Cmd {
 		}
 		worktreePath := filepath.Join(repoRoot, ".tulip", "worktrees", branch)
 		if base != "" {
-			if err := gitCreateWorktreeFromBase(repoRoot, branch, worktreePath, base); err != nil {
+			baseRef := "origin/" + base
+			if gitBranchExistsLocally(repoRoot, base) {
+				baseRef = base
+			}
+			if err := gitCreateWorktreeFromBase(repoRoot, branch, worktreePath, baseRef); err != nil {
 				return errMsg{err}
 			}
 		} else {
@@ -879,7 +883,11 @@ func (m *model) createWorkerAfterFetchCmd(branch, base string) tea.Cmd {
 
 		var err error
 		if base != "" {
-			err = gitCreateWorktreeFromBase(repoRoot, branch, worktreePath, "origin/"+base)
+			baseRef := "origin/" + base
+			if gitBranchExistsLocally(repoRoot, base) {
+				baseRef = base
+			}
+			err = gitCreateWorktreeFromBase(repoRoot, branch, worktreePath, baseRef)
 			if err != nil {
 				var stale StaleWorktreeError
 				if errors.As(err, &stale) {
