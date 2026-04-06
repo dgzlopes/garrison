@@ -48,11 +48,12 @@ tulip reset    # wipe all projects, sessions, and worktrees
 |-----|---------|
 | grey | No uncommitted changes |
 | green | Uncommitted changes in worktree |
+| red | Worktree error (e.g. missing path) |
 
-| Label | Meaning |
-|-------|---------|
-| `graft: active` | Yarn watch is running |
-| `graft: failed` | Watch exited unexpectedly |
+| Icon | Meaning |
+|------|---------|
+| 🐝 (green) | Yarn watch is running |
+| 🐝 failed (red) | Watch exited unexpectedly |
 
 ## Project commands
 
@@ -67,6 +68,8 @@ tulip graft-debug <id|branch>    # attach to the graft watch output
 tulip vscode <id|branch>         # open the worktree in VS Code
 tulip publish <id|branch> <msg>  # stage all, commit (signed), and push
 ```
+
+The `↵` action menu also provides: **difit** (visual diff, requires [difit](https://github.com/yoshiko-pg/difit)) and **open-pr** (open PR in browser).
 
 ## License
 
