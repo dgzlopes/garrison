@@ -732,6 +732,14 @@ func (m *model) publishCmd(branch, message string) tea.Cmd {
 	}
 }
 
+func (m model) pickedActions() []struct{ name, desc string } {
+	actions := pickActions[:]
+	if m.pickedWorker != nil && m.pickedWorker.PRURL != "" {
+		actions = append(actions, struct{ name, desc string }{"open-pr", "open pull request in browser"})
+	}
+	return actions
+}
+
 func (m model) updatePick(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch k.String() {
 	case "esc", "q":
@@ -742,7 +750,7 @@ func (m model) updatePick(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.pickCursor--
 		}
 	case "down", "j":
-		if m.pickCursor < len(pickActions)-1 {
+		if m.pickCursor < len(m.pickedActions())-1 {
 			m.pickCursor++
 		}
 	case "enter":
@@ -783,6 +791,11 @@ func (m model) updatePick(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.input.Focus()
 			m.mode = modePublish
 			return m, textinput.Blink
+		case 6: // open-pr
+			m.mode = modeNormal
+			url := m.pickedWorker.PRURL
+			m.pickedWorker = nil
+			go func() { _ = openInBrowser(url) }()
 		}
 	}
 	return m, nil
@@ -1126,7 +1139,8 @@ func (m model) viewPick() string {
 	lines = append(lines, "")
 	lines = append(lines, sHeader.Render("  "+m.pickedWorker.Branch))
 	lines = append(lines, "")
-	for i, a := range pickActions {
+	actions := m.pickedActions()
+	for i, a := range actions {
 		if i == m.pickCursor {
 			lines = append(lines, "  "+sCyan.Render("▶")+" "+sBold.Render(a.name)+"  "+sDim.Render(a.desc))
 		} else {
@@ -1134,7 +1148,7 @@ func (m model) viewPick() string {
 		}
 	}
 	lines = append(lines, "")
-	action := pickActions[m.pickCursor].name
+	action := actions[m.pickCursor].name
 	branch := m.pickedWorker.Branch
 	lines = append(lines, "  "+
 		sDim.Render("to run press")+" "+sKey.Render("↵ enter")+" "+

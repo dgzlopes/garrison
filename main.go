@@ -475,6 +475,11 @@ func cmdPublish(branch, message string) error {
 	return gitPush(w.Worktree, w.Branch)
 }
 
+// openInBrowser opens a URL in the default browser.
+func openInBrowser(url string) error {
+	return exec.Command("open", url).Run()
+}
+
 // cmdVSCode opens the worktree in VS Code.
 func cmdVSCode(branch string) error {
 	_, w, err := requireWorker(branch)
