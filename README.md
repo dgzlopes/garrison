@@ -11,7 +11,7 @@ Run multiple Claude Code sessions in parallel on a single repo, each isolated in
 - Jump into any project's shell, preview live changes with Graft, or commit and push from a single command.
 - Fully isolated from your personal tmux — tulip runs its own tmux server.
 
-https://github.com/user-attachments/assets/4f3c1c89-fc96-46c7-9c63-9a7a45c03746
+https://github.com/user-attachments/assets/c750da08-e3db-473f-b013-555b248aa3fd
 
 ## Requirements
 
