@@ -486,7 +486,7 @@ func cmdDiffit(branch string) error {
 	if err != nil {
 		return err
 	}
-	return tmuxNewWindow(w.Session, "difit", w.Worktree, "difit .")
+	return tmuxNewWindow(w.Session, "difit", w.Worktree, "difit --include-untracked .")
 }
 
 // cmdVSCode opens the worktree in VS Code.
