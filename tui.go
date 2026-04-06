@@ -998,8 +998,10 @@ func (m *model) syncWorkersScroll() {
 	}
 }
 
+const prBadgeWidth = 8 // width of "PR #9999"
+
 func prBadge(number int, state, url string) string {
-	label := fmt.Sprintf("PR #%d", number)
+	label := fmt.Sprintf("%-*s", prBadgeWidth, fmt.Sprintf("PR #%d", number))
 	var styled string
 	switch state {
 	case "OPEN":
@@ -1014,7 +1016,6 @@ func prBadge(number int, state, url string) string {
 		styled = sDim.Render(label)
 	}
 	if url != "" {
-		// OSC 8 terminal hyperlink: \e]8;;URL\e\\ text \e]8;;\e\\
 		styled = "\x1b]8;;" + url + "\x1b\\" + styled + "\x1b]8;;\x1b\\"
 	}
 	return styled
@@ -1044,7 +1045,15 @@ func (m model) pageHeader() string {
 }
 
 func (m model) viewMain() string {
-	const colB = 26
+	colB := 0
+	for _, w := range m.state.Workers {
+		if len(w.Branch) > colB {
+			colB = len(w.Branch)
+		}
+	}
+	if colB > 26 {
+		colB = 26
+	}
 
 	var lines []string
 	lines = append(lines, m.pageHeader())
@@ -1079,7 +1088,7 @@ func (m model) viewMain() string {
 			if wk.PRNumber > 0 {
 				row += "  " + prBadge(wk.PRNumber, wk.PRState, wk.PRURL)
 			} else {
-				row += "  " + sDim.Render("PR: -")
+				row += "  " + sDim.Render(fmt.Sprintf("%-*s", prBadgeWidth, "PR: -"))
 			}
 			switch wk.GraftStatus {
 			case "active":
@@ -1154,11 +1163,18 @@ func (m model) viewPick() string {
 	lines = append(lines, sHeader.Render("  "+m.pickedWorker.Branch))
 	lines = append(lines, "")
 	actions := m.pickedActions()
+	nameWidth := 0
+	for _, a := range actions {
+		if len(a.name) > nameWidth {
+			nameWidth = len(a.name)
+		}
+	}
 	for i, a := range actions {
+		name := fmt.Sprintf("%-*s", nameWidth, a.name)
 		if i == m.pickCursor {
-			lines = append(lines, "  "+sCyan.Render("▶")+" "+sBold.Render(a.name)+"  "+sDim.Render(a.desc))
+			lines = append(lines, "  "+sCyan.Render("▶")+" "+sBold.Render(name)+"  "+sDim.Render(a.desc))
 		} else {
-			lines = append(lines, "    "+sGrey.Render(a.name)+"  "+sDim.Render(a.desc))
+			lines = append(lines, "    "+sGrey.Render(name)+"  "+sDim.Render(a.desc))
 		}
 	}
 	lines = append(lines, "")
