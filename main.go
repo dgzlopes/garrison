@@ -35,6 +35,9 @@ func main() {
 	// root can't be found (e.g. -h/--version flags) we just leave it empty.
 	if root, err := findRepoRoot(); err == nil {
 		initTmuxSocket(filepath.Join(root, ".tulip"))
+		// Re-apply global tmux settings on every tulip invocation so that
+		// existing sessions pick up binding fixes from newer versions.
+		tmuxApplyGlobalSettings()
 	}
 
 	args := os.Args[1:]

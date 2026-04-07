@@ -36,13 +36,11 @@ func tmuxHasSession(name string) bool {
 	return cmd.Run() == nil
 }
 
-// tmuxNewSession creates a new detached tmux session with the given name, starting in startDir.
-// branch is stored as a session variable so the status bar can display it.
-func tmuxNewSession(name, branch, startDir string) error {
-	if err := tmuxRun("new-session", "-d", "-s", name, "-n", "claude", "-c", startDir); err != nil {
-		return err
-	}
-	_ = tmuxRun("set-option", "-t", name, "@branch", branch)
+// tmuxApplyGlobalSettings applies all global tmux options and key bindings.
+// It is called both when creating a new session and at tulip startup so that
+// settings are always current even if the tmux server was started by an older
+// version of tulip.
+func tmuxApplyGlobalSettings() {
 	_ = tmuxRun("set-option", "-g", "status", "on")
 	_ = tmuxRun("set-option", "-g", "status-style", "bg=colour235,fg=colour245")
 	_ = tmuxRun("set-option", "-g", "status-left", "#[fg=colour6,bold] #{s|watch/.*|Graft Debug|:#{s|shell/.*|Shell|:#{s|claude|Claude Code|:#{window_name}}}} #[nobold,fg=colour8]— #[fg=colour245]#{@branch}#{?#{==:#{@grafting},active}, #[fg=colour2]graft: active,#{?#{==:#{@grafting},failed}, #[fg=colour1]graft: failed,}}  #[bg=colour240,fg=colour255] #{?pane_in_mode,selecting…,copy} ")
@@ -55,9 +53,28 @@ func tmuxNewSession(name, branch, startDir string) error {
 	_ = tmuxRun("set-option", "-g", "mouse", "on")
 	_ = tmuxRun("set-option", "-g", "set-clipboard", "off")
 	_ = tmuxRun("bind-key", "-T", "copy-mode", "MouseDragEnd1Pane", "send-keys", "-X", "copy-pipe-and-cancel", "pbcopy")
-	_ = tmuxRun("bind-key", "-n", "MouseDragEnd1Pane", "send-keys", "-X", "copy-pipe-and-cancel", "pbcopy")
+	// Remove legacy root-table MouseDragEnd1Pane that older tulip versions set.
+	_ = tmuxRun("unbind-key", "-n", "MouseDragEnd1Pane")
+	// Don't enter copy mode from mouse wheel or drag in normal mode — some terminals
+	// fire a spurious scroll/drag event during the attach transition, which would
+	// immediately land the user in copy mode. Explicit copy mode is still available
+	// via the status-left "copy" button. Scrolling in copy mode still works normally.
+	_ = tmuxRun("bind-key", "-n", "WheelUpPane", "send-keys", "-M")
+	_ = tmuxRun("bind-key", "-n", "WheelDownPane", "send-keys", "-M")
+	_ = tmuxRun("bind-key", "-n", "MouseDrag1Pane", "send-keys", "-M")
 	_ = tmuxRun("bind-key", "-n", "MouseDown1StatusRight", "detach-client")
+	_ = tmuxRun("bind-key", "-T", "copy-mode", "MouseDown1StatusRight", "detach-client")
 	_ = tmuxRun("bind-key", "-n", "MouseDown1StatusLeft", "copy-mode")
+}
+
+// tmuxNewSession creates a new detached tmux session with the given name, starting in startDir.
+// branch is stored as a session variable so the status bar can display it.
+func tmuxNewSession(name, branch, startDir string) error {
+	if err := tmuxRun("new-session", "-d", "-s", name, "-n", "claude", "-c", startDir); err != nil {
+		return err
+	}
+	_ = tmuxRun("set-option", "-t", name, "@branch", branch)
+	tmuxApplyGlobalSettings()
 	return nil
 }
 
@@ -76,7 +93,6 @@ func tmuxNewWindow(session, name, startDir, command string) error {
 	}
 	return tmuxRun(args...)
 }
-
 
 // tmuxHasWindow returns true if a window with the given name exists in the session.
 func tmuxHasWindow(session, window string) bool {
@@ -136,8 +152,6 @@ func tmuxKillSession(name string) error {
 	}
 	return tmuxRun("kill-session", "-t", name)
 }
-
-
 
 // tmuxSetGraftStatus updates the @grafting session variable so the status bar
 // reflects the current graft state: "", "active", or "failed".
