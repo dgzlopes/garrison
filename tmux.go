@@ -63,7 +63,9 @@ func tmuxApplyGlobalSettings() {
 	_ = tmuxRun("bind-key", "-n", "WheelDownPane", "send-keys", "-M")
 	_ = tmuxRun("bind-key", "-n", "MouseDrag1Pane", "send-keys", "-M")
 	_ = tmuxRun("bind-key", "-n", "MouseDown1StatusRight", "detach-client")
+	_ = tmuxRun("bind-key", "-n", "MouseUp1StatusRight", "detach-client")
 	_ = tmuxRun("bind-key", "-T", "copy-mode", "MouseDown1StatusRight", "detach-client")
+	_ = tmuxRun("bind-key", "-T", "copy-mode", "MouseUp1StatusRight", "detach-client")
 	_ = tmuxRun("bind-key", "-n", "MouseDown1StatusLeft", "copy-mode")
 }
 
